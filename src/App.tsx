@@ -352,11 +352,11 @@ function App() {
     <>
       {/* ===== APP BAR ===== */}
       <AppBar position="sticky" elevation={0}>
-        <Toolbar>
+        <Toolbar sx={{ minHeight: { xs: 56, sm: 64 }, px: { xs: 1.5, sm: 2 } }}>
           <Box
             sx={{
-              mr: 1.5,
-              fontSize: '1.5rem',
+              mr: 1,
+              fontSize: { xs: '1.25rem', sm: '1.5rem' },
               animation: 'pulse-glow 3s ease-in-out infinite',
               borderRadius: '50%',
               display: 'flex',
@@ -371,6 +371,7 @@ function App() {
             sx={{
               flexGrow: 1,
               fontWeight: 700,
+              fontSize: { xs: '1.1rem', sm: '1.25rem' },
               letterSpacing: '-0.02em',
               background: mode === 'dark'
                 ? 'linear-gradient(135deg, #f1f5f9, #94a3b8)'
@@ -385,8 +386,9 @@ function App() {
           <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
             <IconButton
               onClick={toggleMode}
+              size="small"
               sx={{
-                mr: 1,
+                mr: { xs: 0.5, sm: 1 },
                 color: mode === 'dark' ? '#fbbf24' : '#6366f1',
                 background: mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)',
                 '&:hover': {
@@ -397,21 +399,126 @@ function App() {
               {mode === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
             </IconButton>
           </Tooltip>
+          {/* Icon-only on mobile, full button on desktop */}
+          <Tooltip title="New Group">
+            <IconButton
+              onClick={() => setGroupDialogOpen(true)}
+              sx={{
+                display: { xs: 'inline-flex', sm: 'none' },
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
+                },
+              }}
+              size="small"
+            >
+              <Add />
+            </IconButton>
+          </Tooltip>
           <Button
             variant="contained"
             size="small"
             startIcon={<GroupAdd />}
             onClick={() => setGroupDialogOpen(true)}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
           >
             New Group
           </Button>
         </Toolbar>
-      </AppBar >
+      </AppBar>
 
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Grid container spacing={3}>
-          {/* ===== GROUPS SIDEBAR ===== */}
-          <Grid size={{ xs: 12, md: 4 }}>
+      {/* ===== MOBILE GROUP SELECTOR ===== */}
+      <Box
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          px: 2,
+          pt: 2,
+          pb: 0,
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            overflowX: 'auto',
+            pb: 1,
+            WebkitOverflowScrolling: 'touch',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none',
+          }}
+        >
+          {groups.map((group, index) => (
+            <Chip
+              key={group.id}
+              avatar={
+                <Avatar
+                  sx={{
+                    background: `${getAvatarGradient(index)} !important`,
+                    width: 28,
+                    height: 28,
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#fff !important',
+                  }}
+                >
+                  {group.name[0]?.toUpperCase()}
+                </Avatar>
+              }
+              label={group.name}
+              onClick={() => setSelectedGroupId(group.id)}
+              onDelete={() => handleDeleteGroup(group.id)}
+              deleteIcon={<DeleteOutline sx={{ fontSize: '16px !important' }} />}
+              variant={group.id === selectedGroup?.id ? 'filled' : 'outlined'}
+              sx={{
+                flexShrink: 0,
+                borderRadius: 3,
+                height: 38,
+                px: 0.5,
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                ...(group.id === selectedGroup?.id
+                  ? {
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15))',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    color: 'primary.light',
+                  }
+                  : {
+                    borderColor: 'divider',
+                    color: 'text.secondary',
+                  }),
+              }}
+            />
+          ))}
+          <Chip
+            icon={<Add sx={{ fontSize: '18px !important' }} />}
+            label="New"
+            onClick={() => setGroupDialogOpen(true)}
+            variant="outlined"
+            sx={{
+              flexShrink: 0,
+              borderRadius: 3,
+              height: 38,
+              borderColor: 'rgba(99, 102, 241, 0.3)',
+              borderStyle: 'dashed',
+              color: 'primary.light',
+              fontWeight: 600,
+              fontSize: '0.8rem',
+            }}
+          />
+        </Stack>
+      </Box>
+
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: { xs: 2, sm: 3, md: 4 },
+          px: { xs: 1.5, sm: 2, md: 3 },
+        }}
+      >
+        <Grid container spacing={{ xs: 2, md: 3 }}>
+          {/* ===== GROUPS SIDEBAR (desktop only) ===== */}
+          <Grid size={{ xs: 12, md: 4 }} sx={{ display: { xs: 'none', md: 'block' } }}>
             <Card
               sx={{
                 height: '100%',
@@ -516,7 +623,7 @@ function App() {
           {/* ===== MAIN CONTENT ===== */}
           <Grid size={{ xs: 12, md: 8 }}>
             {selectedGroup ? (
-              <Stack spacing={3}>
+              <Stack spacing={{ xs: 2, md: 3 }}>
                 {/* Header card */}
                 <Card
                   sx={{
@@ -525,17 +632,18 @@ function App() {
                     border: '1px solid rgba(99, 102, 241, 0.12)',
                   }}
                 >
-                  <CardContent>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
-                      spacing={2}
+                      spacing={1.5}
                       justifyContent="space-between"
-                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                      alignItems={{ xs: 'stretch', sm: 'center' }}
                     >
                       <Box>
                         <Typography
                           variant="h5"
                           sx={{
+                            fontSize: { xs: '1.25rem', sm: '1.5rem' },
                             background: mode === 'dark'
                               ? 'linear-gradient(135deg, #f1f5f9, #cbd5e1)'
                               : 'linear-gradient(135deg, #1e293b, #334155)',
@@ -546,16 +654,20 @@ function App() {
                         >
                           {selectedGroup.name}
                         </Typography>
-                        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                        <Typography
+                          color="text.secondary"
+                          sx={{ mt: 0.5, display: { xs: 'none', sm: 'block' }, fontSize: '0.875rem' }}
+                        >
                           Split expenses among members, track balances, and settle up effortlessly.
                         </Typography>
                       </Box>
-                      <Stack direction="row" spacing={1}>
+                      <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
                         <Button
                           variant="outlined"
                           startIcon={<PersonAdd />}
                           onClick={handleMemberDialogOpen}
                           size="small"
+                          sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, px: { xs: 1.5, sm: 2.5 } }}
                         >
                           Add member
                         </Button>
@@ -564,14 +676,26 @@ function App() {
                           startIcon={<ReceiptLong />}
                           onClick={openExpenseDialog}
                           size="small"
+                          sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, px: { xs: 1.5, sm: 2.5 } }}
                         >
                           Add expense
                         </Button>
                       </Stack>
                     </Stack>
 
-                    {/* Summary tiles */}
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={3}>
+                    {/* Summary tiles — horizontal scroll on mobile */}
+                    <Stack
+                      direction="row"
+                      spacing={1.5}
+                      mt={2}
+                      sx={{
+                        overflowX: { xs: 'auto', sm: 'visible' },
+                        pb: { xs: 0.5, sm: 0 },
+                        WebkitOverflowScrolling: 'touch',
+                        '&::-webkit-scrollbar': { display: 'none' },
+                        scrollbarWidth: 'none',
+                      }}
+                    >
                       <SummaryTile
                         label="Total spent"
                         value={formatCurrency(totalSpent)}
@@ -598,17 +722,19 @@ function App() {
                 </Card>
 
                 {/* Balances & Settlements */}
-                <Grid container spacing={3}>
+                <Grid container spacing={{ xs: 2, md: 3 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', animation: 'fadeInUp 0.5s ease-out 0.2s both' }}>
-                      <CardContent>
+                      <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
                         <Stack
                           direction="row"
                           alignItems="center"
                           justifyContent="space-between"
                           mb={2}
                         >
-                          <Typography variant="h6">Member balances</Typography>
+                          <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            Member balances
+                          </Typography>
                           <Chip
                             label={selectedGroup.members.length === 0 ? 'No members' : 'Live'}
                             size="small"
@@ -625,7 +751,7 @@ function App() {
                           />
                         </Stack>
                         {selectedGroup.members.length === 0 ? (
-                          <Box sx={{ textAlign: 'center', py: 4 }}>
+                          <Box sx={{ textAlign: 'center', py: { xs: 3, sm: 4 } }}>
                             <Typography sx={{ fontSize: '2rem', mb: 1 }}>⚖️</Typography>
                             <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                               Add members to track how everyone stands.
@@ -673,15 +799,16 @@ function App() {
                                   sx={{
                                     borderRadius: 2,
                                     mb: 0.5,
+                                    px: { xs: 1, sm: 2 },
                                     '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
                                   }}
                                 >
-                                  <ListItemAvatar>
+                                  <ListItemAvatar sx={{ minWidth: { xs: 44, sm: 56 } }}>
                                     <Avatar
                                       sx={{
                                         background: getAvatarGradient(index),
-                                        width: 36,
-                                        height: 36,
+                                        width: { xs: 32, sm: 36 },
+                                        height: { xs: 32, sm: 36 },
                                         fontSize: '0.85rem',
                                         fontWeight: 700,
                                       }}
@@ -691,7 +818,7 @@ function App() {
                                   </ListItemAvatar>
                                   <ListItemText
                                     primary={
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                                         {member.name}
                                       </Typography>
                                     }
@@ -723,14 +850,16 @@ function App() {
 
                   <Grid size={{ xs: 12, md: 6 }}>
                     <Card sx={{ height: '100%', animation: 'fadeInUp 0.5s ease-out 0.25s both' }}>
-                      <CardContent>
+                      <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
                         <Stack
                           direction="row"
                           alignItems="center"
                           justifyContent="space-between"
                           mb={2}
                         >
-                          <Typography variant="h6">Settlements</Typography>
+                          <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                            Settlements
+                          </Typography>
                           <Box sx={{
                             p: 0.75,
                             borderRadius: 1.5,
@@ -741,7 +870,7 @@ function App() {
                           </Box>
                         </Stack>
                         {settlements.length === 0 ? (
-                          <Box sx={{ textAlign: 'center', py: 4 }}>
+                          <Box sx={{ textAlign: 'center', py: { xs: 3, sm: 4 } }}>
                             <Typography sx={{ fontSize: '2rem', mb: 1 }}>✅</Typography>
                             <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                               Everyone is settled up!
@@ -755,7 +884,7 @@ function App() {
                                 sx={{
                                   borderRadius: 2,
                                   mb: 0.5,
-                                  px: 1.5,
+                                  px: { xs: 1, sm: 1.5 },
                                   py: 1,
                                   background: 'rgba(148, 163, 184, 0.03)',
                                   '&:hover': { background: 'rgba(148, 163, 184, 0.06)' },
@@ -763,12 +892,12 @@ function App() {
                               >
                                 <ListItemText
                                   primary={
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                    <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                                         {memberNameById(selectedGroup.members, settlement.from)}
                                       </Typography>
                                       <ArrowForward sx={{ fontSize: 14, color: 'primary.light' }} />
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                                         {memberNameById(selectedGroup.members, settlement.to)}
                                       </Typography>
                                     </Stack>
@@ -799,15 +928,15 @@ function App() {
 
                 {/* Expenses list */}
                 <Card sx={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}>
-                  <CardContent>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
                     <Stack
-                      direction={{ xs: 'column', sm: 'row' }}
+                      direction="row"
                       spacing={2}
-                      alignItems={{ xs: 'flex-start', sm: 'center' }}
+                      alignItems="center"
                       justifyContent="space-between"
                       mb={2}
                     >
-                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                         <ReceiptLong sx={{ fontSize: 20, color: 'primary.main' }} />
                         Expenses
                       </Typography>
@@ -817,12 +946,13 @@ function App() {
                         startIcon={<Add />}
                         onClick={openExpenseDialog}
                         disabled={selectedGroup.members.length === 0}
+                        sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, flexShrink: 0 }}
                       >
                         New expense
                       </Button>
                     </Stack>
                     {selectedGroup.expenses.length === 0 ? (
-                      <Box sx={{ textAlign: 'center', py: 5 }}>
+                      <Box sx={{ textAlign: 'center', py: { xs: 3, sm: 5 } }}>
                         <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>🧾</Typography>
                         <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
                           No expenses yet. Add your first one to see how costs are split.
@@ -855,24 +985,25 @@ function App() {
                               sx={{
                                 borderRadius: 2,
                                 mb: 0.5,
+                                px: { xs: 0.5, sm: 2 },
                                 '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
                               }}
                             >
-                              <ListItemAvatar>
+                              <ListItemAvatar sx={{ minWidth: { xs: 44, sm: 56 } }}>
                                 <Avatar
                                   sx={{
                                     background: getAvatarGradient(index),
-                                    width: 38,
-                                    height: 38,
+                                    width: { xs: 32, sm: 38 },
+                                    height: { xs: 32, sm: 38 },
                                   }}
                                 >
-                                  <ReceiptLong sx={{ fontSize: 18 }} />
+                                  <ReceiptLong sx={{ fontSize: { xs: 16, sm: 18 } }} />
                                 </Avatar>
                               </ListItemAvatar>
                               <ListItemText
                                 primary={
-                                  <Stack direction="row" alignItems="center" spacing={1}>
-                                    <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                  <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
+                                    <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                                       {expense.description}
                                     </Typography>
                                     <Chip
@@ -889,7 +1020,7 @@ function App() {
                                   </Stack>
                                 }
                                 secondary={
-                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                                     Paid by{' '}
                                     <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>
                                       {memberNameById(selectedGroup.members, expense.paidBy)}
@@ -904,7 +1035,7 @@ function App() {
                               />
                             </ListItem>
                             {index < selectedGroup.expenses.length - 1 && (
-                              <Divider sx={{ ml: 9, mr: 2, opacity: 0.5 }} />
+                              <Divider sx={{ ml: { xs: 6, sm: 9 }, mr: 2, opacity: 0.5 }} />
                             )}
                           </Box>
                         ))}
@@ -919,15 +1050,16 @@ function App() {
                 sx={{
                   animation: 'fadeInUp 0.6s ease-out',
                   textAlign: 'center',
-                  py: 4,
+                  py: { xs: 3, sm: 4 },
                 }}
               >
-                <CardContent>
-                  <Typography sx={{ fontSize: '3.5rem', mb: 2 }}>💰</Typography>
+                <CardContent sx={{ px: { xs: 2, sm: 3 } }}>
+                  <Typography sx={{ fontSize: { xs: '2.5rem', sm: '3.5rem' }, mb: 2 }}>💰</Typography>
                   <Typography
                     variant="h5"
                     sx={{
                       mb: 1,
+                      fontSize: { xs: '1.25rem', sm: '1.5rem' },
                       background: mode === 'dark'
                         ? 'linear-gradient(135deg, #f1f5f9, #94a3b8)'
                         : 'linear-gradient(135deg, #1e293b, #475569)',
@@ -938,7 +1070,7 @@ function App() {
                   >
                     Organize your shared expenses
                   </Typography>
-                  <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}>
+                  <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                     Create a group, add members, and start logging expenses. Splitesh calculates who
                     owes whom and keeps everything in sync.
                   </Typography>
@@ -955,7 +1087,7 @@ function App() {
             )}
           </Grid>
         </Grid>
-      </Container >
+      </Container>
 
       {/* ===== DIALOGS ===== */}
       < Dialog open={isGroupDialogOpen} onClose={() => setGroupDialogOpen(false)
@@ -1156,6 +1288,8 @@ function SummaryTile({
     <Card
       sx={{
         flex: 1,
+        flexShrink: 0,
+        minWidth: { xs: 150, sm: 'auto' },
         background: gradient,
         border: '1px solid rgba(148, 163, 184, 0.06)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
