@@ -39,8 +39,11 @@ import {
 import {
   Add,
   ArrowForward,
+  Check,
+  Close,
   DarkMode,
   DeleteOutline,
+  Edit,
   Group as GroupIcon,
   GroupAdd,
   LightMode,
@@ -134,6 +137,7 @@ function App() {
   const [memberError, setMemberError] = useState('')
 
   const [isExpenseDialogOpen, setExpenseDialogOpen] = useState(false)
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null)
   const [expenseForm, setExpenseForm] = useState<ExpenseFormState>({
     description: '',
     amount: '',
@@ -141,6 +145,12 @@ function App() {
     splitBetween: {},
   })
   const [expenseError, setExpenseError] = useState<string | null>(null)
+
+  // Inline editing state
+  const [editingGroupName, setEditingGroupName] = useState<string | null>(null)
+  const [editGroupNameValue, setEditGroupNameValue] = useState('')
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
+  const [editMemberNameValue, setEditMemberNameValue] = useState('')
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.id === selectedGroupId) ?? groups[0] ?? null,
@@ -250,21 +260,41 @@ function App() {
     }
   }
 
-  const openExpenseDialog = () => {
+  const openExpenseDialog = (expenseId?: string) => {
     if (!selectedGroup || selectedGroup.members.length === 0) {
       setExpenseError('Add at least one member before creating an expense.')
       return
     }
-    const membersState = selectedGroup.members.reduce<Record<string, boolean>>((acc, member) => {
-      acc[member.id] = true
-      return acc
-    }, {})
-    setExpenseForm({
-      description: '',
-      amount: '',
-      paidBy: selectedGroup.members[0]?.id ?? '',
-      splitBetween: membersState,
-    })
+
+    if (expenseId) {
+      // Editing existing expense
+      const expense = selectedGroup.expenses.find(e => e.id === expenseId)
+      if (!expense) return
+      const membersState = selectedGroup.members.reduce<Record<string, boolean>>((acc, member) => {
+        acc[member.id] = expense.splitBetween.includes(member.id)
+        return acc
+      }, {})
+      setExpenseForm({
+        description: expense.description,
+        amount: expense.amount.toString(),
+        paidBy: expense.paidBy,
+        splitBetween: membersState,
+      })
+      setEditingExpenseId(expenseId)
+    } else {
+      // New expense
+      const membersState = selectedGroup.members.reduce<Record<string, boolean>>((acc, member) => {
+        acc[member.id] = true
+        return acc
+      }, {})
+      setExpenseForm({
+        description: '',
+        amount: '',
+        paidBy: selectedGroup.members[0]?.id ?? '',
+        splitBetween: membersState,
+      })
+      setEditingExpenseId(null)
+    }
     setExpenseError(null)
     setExpenseDialogOpen(true)
   }
@@ -286,7 +316,7 @@ function App() {
     }))
   }
 
-  const handleAddExpense = async () => {
+  const handleSaveExpense = async () => {
     if (!selectedGroup) return
 
     const amount = Number.parseFloat(expenseForm.amount)
@@ -312,25 +342,76 @@ function App() {
       return
     }
 
+    const expenseData = {
+      description: expenseForm.description.trim(),
+      amount,
+      paidBy: expenseForm.paidBy,
+      splitBetween: participants,
+    }
+
     try {
-      const newExpense = await storage.addExpense(selectedGroup.id, {
-        description: expenseForm.description.trim(),
-        amount,
-        paidBy: expenseForm.paidBy,
-        splitBetween: participants
-      })
-
-      const updatedGroup: Group = {
-        ...selectedGroup,
-        expenses: [newExpense, ...selectedGroup.expenses]
+      if (editingExpenseId) {
+        // Update existing expense
+        const updatedExpense = await storage.updateExpense(selectedGroup.id, editingExpenseId, expenseData)
+        const updatedGroup: Group = {
+          ...selectedGroup,
+          expenses: selectedGroup.expenses.map(e => e.id === editingExpenseId ? updatedExpense : e),
+        }
+        setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
+      } else {
+        // Create new expense
+        const newExpense = await storage.addExpense(selectedGroup.id, expenseData)
+        const updatedGroup: Group = {
+          ...selectedGroup,
+          expenses: [newExpense, ...selectedGroup.expenses],
+        }
+        setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
       }
-
-      setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
       setExpenseDialogOpen(false)
+      setEditingExpenseId(null)
     } catch (e) {
       console.error(e)
       setExpenseError('Failed to save expense')
     }
+  }
+
+  const handleUpdateGroupName = async (groupId: string) => {
+    const name = editGroupNameValue.trim()
+    if (!name) {
+      setEditingGroupName(null)
+      return
+    }
+    try {
+      const updatedGroup = await storage.updateGroupName(groupId, name)
+      setGroups((prev) => prev.map(g => g.id === groupId ? { ...g, name: updatedGroup.name } : g))
+    } catch (e) {
+      console.error(e)
+    }
+    setEditingGroupName(null)
+  }
+
+  const handleUpdateMemberName = async (memberId: string) => {
+    if (!selectedGroup) return
+    const name = editMemberNameValue.trim()
+    if (!name) {
+      setEditingMemberId(null)
+      return
+    }
+    // Check for duplicate
+    const exists = selectedGroup.members.some(
+      m => m.id !== memberId && m.name.toLowerCase() === name.toLowerCase()
+    )
+    if (exists) {
+      setEditingMemberId(null)
+      return
+    }
+    try {
+      const updatedGroup = await storage.updateMemberName(selectedGroup.id, memberId, name)
+      setGroups((prev) => prev.map(g => g.id === selectedGroup.id ? { ...g, members: updatedGroup.members } : g))
+    } catch (e) {
+      console.error(e)
+    }
+    setEditingMemberId(null)
   }
 
   const handleDeleteExpense = async (expenseId: string) => {
@@ -640,20 +721,57 @@ function App() {
                       alignItems={{ xs: 'stretch', sm: 'center' }}
                     >
                       <Box>
-                        <Typography
-                          variant="h5"
-                          sx={{
-                            fontSize: { xs: '1.25rem', sm: '1.5rem' },
-                            background: mode === 'dark'
-                              ? 'linear-gradient(135deg, #f1f5f9, #cbd5e1)'
-                              : 'linear-gradient(135deg, #1e293b, #334155)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                          }}
-                        >
-                          {selectedGroup.name}
-                        </Typography>
+                        {editingGroupName === selectedGroup.id ? (
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <TextField
+                              value={editGroupNameValue}
+                              onChange={(e) => setEditGroupNameValue(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleUpdateGroupName(selectedGroup.id)
+                                if (e.key === 'Escape') setEditingGroupName(null)
+                              }}
+                              size="small"
+                              autoFocus
+                              variant="standard"
+                              sx={{ '& input': { fontSize: { xs: '1.25rem', sm: '1.5rem' }, fontWeight: 700 } }}
+                            />
+                            <IconButton size="small" onClick={() => handleUpdateGroupName(selectedGroup.id)} sx={{ color: 'success.main' }}>
+                              <Check fontSize="small" />
+                            </IconButton>
+                            <IconButton size="small" onClick={() => setEditingGroupName(null)} sx={{ color: 'text.secondary' }}>
+                              <Close fontSize="small" />
+                            </IconButton>
+                          </Stack>
+                        ) : (
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Typography
+                              variant="h5"
+                              sx={{
+                                fontSize: { xs: '1.25rem', sm: '1.5rem' },
+                                background: mode === 'dark'
+                                  ? 'linear-gradient(135deg, #f1f5f9, #cbd5e1)'
+                                  : 'linear-gradient(135deg, #1e293b, #334155)',
+                                backgroundClip: 'text',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                              }}
+                            >
+                              {selectedGroup.name}
+                            </Typography>
+                            <Tooltip title="Edit group name">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  setEditingGroupName(selectedGroup.id)
+                                  setEditGroupNameValue(selectedGroup.name)
+                                }}
+                                sx={{ color: 'text.secondary', '&:hover': { color: 'primary.light' } }}
+                              >
+                                <Edit sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        )}
                         <Typography
                           color="text.secondary"
                           sx={{ mt: 0.5, display: { xs: 'none', sm: 'block' }, fontSize: '0.875rem' }}
@@ -674,7 +792,7 @@ function App() {
                         <Button
                           variant="contained"
                           startIcon={<ReceiptLong />}
-                          onClick={openExpenseDialog}
+                          onClick={() => openExpenseDialog()}
                           size="small"
                           sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, px: { xs: 1.5, sm: 2.5 } }}
                         >
@@ -783,18 +901,30 @@ function App() {
                                 <ListItem
                                   key={member.id}
                                   secondaryAction={
-                                    <Tooltip title="Remove member">
-                                      <IconButton
-                                        edge="end"
-                                        onClick={() => handleRemoveMember(member.id)}
-                                        sx={{
-                                          color: 'text.secondary',
-                                          '&:hover': { color: 'error.main' },
-                                        }}
-                                      >
-                                        <DeleteOutline fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
+                                    editingMemberId === member.id ? null : (
+                                      <Stack direction="row" spacing={0}>
+                                        <Tooltip title="Edit name">
+                                          <IconButton
+                                            onClick={() => {
+                                              setEditingMemberId(member.id)
+                                              setEditMemberNameValue(member.name)
+                                            }}
+                                            sx={{ color: 'text.secondary', '&:hover': { color: 'primary.light' } }}
+                                          >
+                                            <Edit sx={{ fontSize: 16 }} />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Remove member">
+                                          <IconButton
+                                            edge="end"
+                                            onClick={() => handleRemoveMember(member.id)}
+                                            sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                                          >
+                                            <DeleteOutline fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
+                                    )
                                   }
                                   sx={{
                                     borderRadius: 2,
@@ -818,9 +948,32 @@ function App() {
                                   </ListItemAvatar>
                                   <ListItemText
                                     primary={
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                                        {member.name}
-                                      </Typography>
+                                      editingMemberId === member.id ? (
+                                        <Stack direction="row" spacing={0.5} alignItems="center">
+                                          <TextField
+                                            value={editMemberNameValue}
+                                            onChange={(e) => setEditMemberNameValue(e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') handleUpdateMemberName(member.id)
+                                              if (e.key === 'Escape') setEditingMemberId(null)
+                                            }}
+                                            size="small"
+                                            autoFocus
+                                            variant="standard"
+                                            sx={{ '& input': { fontSize: '0.875rem', py: 0 } }}
+                                          />
+                                          <IconButton size="small" onClick={() => handleUpdateMemberName(member.id)} sx={{ color: 'success.main' }}>
+                                            <Check sx={{ fontSize: 14 }} />
+                                          </IconButton>
+                                          <IconButton size="small" onClick={() => setEditingMemberId(null)} sx={{ color: 'text.secondary' }}>
+                                            <Close sx={{ fontSize: 14 }} />
+                                          </IconButton>
+                                        </Stack>
+                                      ) : (
+                                        <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                                          {member.name}
+                                        </Typography>
+                                      )
                                     }
                                     secondary={
                                       <Chip
@@ -944,7 +1097,7 @@ function App() {
                         variant="contained"
                         size="small"
                         startIcon={<Add />}
-                        onClick={openExpenseDialog}
+                        onClick={() => openExpenseDialog()}
                         disabled={selectedGroup.members.length === 0}
                         sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, flexShrink: 0 }}
                       >
@@ -969,18 +1122,25 @@ function App() {
                           >
                             <ListItem
                               secondaryAction={
-                                <Tooltip title="Delete expense">
-                                  <IconButton
-                                    edge="end"
-                                    onClick={() => handleDeleteExpense(expense.id)}
-                                    sx={{
-                                      color: 'text.secondary',
-                                      '&:hover': { color: 'error.main' },
-                                    }}
-                                  >
-                                    <DeleteOutline fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
+                                <Stack direction="row" spacing={0}>
+                                  <Tooltip title="Edit expense">
+                                    <IconButton
+                                      onClick={() => openExpenseDialog(expense.id)}
+                                      sx={{ color: 'text.secondary', '&:hover': { color: 'primary.light' } }}
+                                    >
+                                      <Edit sx={{ fontSize: 16 }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Delete expense">
+                                    <IconButton
+                                      edge="end"
+                                      onClick={() => handleDeleteExpense(expense.id)}
+                                      sx={{ color: 'text.secondary', '&:hover': { color: 'error.main' } }}
+                                    >
+                                      <DeleteOutline fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </Stack>
                               }
                               sx={{
                                 borderRadius: 2,
@@ -1168,7 +1328,7 @@ function App() {
         <DialogTitle sx={{ fontWeight: 700 }}>
           <Stack direction="row" alignItems="center" spacing={1}>
             <Box sx={{ fontSize: '1.25rem' }}>🧾</Box>
-            <span>New expense</span>
+            <span>{editingExpenseId ? 'Edit expense' : 'New expense'}</span>
           </Stack>
         </DialogTitle>
         <DialogContent>
@@ -1243,9 +1403,9 @@ function App() {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setExpenseDialogOpen(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddExpense}>
-            Save expense
+          <Button onClick={() => { setExpenseDialogOpen(false); setEditingExpenseId(null) }} sx={{ color: 'text.secondary' }}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveExpense}>
+            {editingExpenseId ? 'Update expense' : 'Save expense'}
           </Button>
         </DialogActions>
       </Dialog>

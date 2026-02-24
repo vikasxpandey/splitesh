@@ -72,4 +72,34 @@ export const api = {
         });
         if (!response.ok) throw new Error('Failed to delete expense');
     },
+
+    updateGroupName: async (groupId: string, name: string): Promise<Group> => {
+        const response = await fetch(`${API_BASE_URL}/groups/${groupId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+        });
+        if (!response.ok) throw new Error('Failed to update group name');
+        return response.json();
+    },
+
+    updateMemberName: async (groupId: string, memberId: string, name: string): Promise<Group> => {
+        const response = await fetch(`${API_BASE_URL}/groups/${groupId}/members/${memberId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+        });
+        if (!response.ok) throw new Error('Failed to update member name');
+        return response.json();
+    },
+
+    updateExpense: async (groupId: string, expenseId: string, updates: Omit<Expense, 'id' | 'createdAt' | 'groupId'>): Promise<Expense> => {
+        const response = await fetch(`${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        if (!response.ok) throw new Error('Failed to update expense');
+        return response.json();
+    },
 };

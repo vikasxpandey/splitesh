@@ -105,4 +105,42 @@ export const localApi = {
         group.expenses = group.expenses.filter(e => e.id !== expenseId);
         writeGroups(groups);
     },
+
+    updateGroupName: async (groupId: string, name: string): Promise<Group> => {
+        const groups = readGroups();
+        const group = groups.find(g => g.id === groupId);
+        if (!group) throw new Error(`Group ${groupId} not found`);
+        group.name = name;
+        writeGroups(groups);
+        return group;
+    },
+
+    updateMemberName: async (groupId: string, memberId: string, name: string): Promise<Group> => {
+        const groups = readGroups();
+        const group = groups.find(g => g.id === groupId);
+        if (!group) throw new Error(`Group ${groupId} not found`);
+        const member = group.members.find(m => m.id === memberId);
+        if (!member) throw new Error(`Member ${memberId} not found`);
+        member.name = name;
+        writeGroups(groups);
+        return group;
+    },
+
+    updateExpense: async (
+        groupId: string,
+        expenseId: string,
+        updates: Omit<Expense, 'id' | 'createdAt' | 'groupId'>,
+    ): Promise<Expense> => {
+        const groups = readGroups();
+        const group = groups.find(g => g.id === groupId);
+        if (!group) throw new Error(`Group ${groupId} not found`);
+        const expense = group.expenses.find(e => e.id === expenseId);
+        if (!expense) throw new Error(`Expense ${expenseId} not found`);
+        expense.description = updates.description;
+        expense.amount = updates.amount;
+        expense.paidBy = updates.paidBy;
+        expense.splitBetween = updates.splitBetween;
+        writeGroups(groups);
+        return expense;
+    },
 };

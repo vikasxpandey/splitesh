@@ -259,3 +259,74 @@ async def delete_expense(group_id: str, expense_id: str):
         except ResourceNotFoundError:
             raise HTTPException(status_code=404, detail="Expense not found")
     return {"detail": "Expense deleted"}
+
+class GroupUpdate(BaseModel):
+    name: str
+
+class MemberUpdate(BaseModel):
+    name: str
+
+@app.put("/groups/{group_id}", response_model=Group)
+async def update_group_name(group_id: str, update: GroupUpdate):
+    import json
+    with get_table_client(GROUPS_TABLE_NAME) as client:
+        try:
+            entity = client.get_entity(partition_key="Group", row_key=group_id)
+            entity["Name"] = update.name
+            client.update_entity(mode="merge", entity=entity)
+
+            members_data = json.loads(entity.get("Members", "[]"))
+            members = [Member(**m) for m in members_data]
+            return Group(id=group_id, name=update.name, members=members)
+        except ResourceNotFoundError:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+@app.put("/groups/{group_id}/members/{member_id}", response_model=Group)
+async def update_member_name(group_id: str, member_id: str, update: MemberUpdate):
+    import json
+    with get_table_client(GROUPS_TABLE_NAME) as client:
+        try:
+            entity = client.get_entity(partition_key="Group", row_key=group_id)
+            members_data = json.loads(entity.get("Members", "[]"))
+
+            found = False
+            for m in members_data:
+                if m.get("id") == member_id:
+                    m["name"] = update.name
+                    found = True
+                    break
+
+            if not found:
+                raise HTTPException(status_code=404, detail="Member not found")
+
+            entity["Members"] = json.dumps(members_data)
+            client.update_entity(mode="merge", entity=entity)
+
+            members = [Member(**m) for m in members_data]
+            return Group(id=group_id, name=entity["Name"], members=members)
+        except ResourceNotFoundError:
+            raise HTTPException(status_code=404, detail="Group not found")
+
+@app.put("/groups/{group_id}/expenses/{expense_id}", response_model=Expense)
+async def update_expense(group_id: str, expense_id: str, expense_data: ExpenseBase):
+    import json
+    with get_table_client(EXPENSES_TABLE_NAME) as client:
+        try:
+            entity = client.get_entity(partition_key=group_id, row_key=expense_id)
+            entity["Description"] = expense_data.description
+            entity["Amount"] = expense_data.amount
+            entity["PaidBy"] = expense_data.paidBy
+            entity["SplitBetween"] = json.dumps(expense_data.splitBetween)
+            client.update_entity(mode="merge", entity=entity)
+
+            return Expense(
+                id=expense_id,
+                groupId=group_id,
+                createdAt=entity.get("CreatedAt", ""),
+                description=expense_data.description,
+                amount=expense_data.amount,
+                paidBy=expense_data.paidBy,
+                splitBetween=expense_data.splitBetween,
+            )
+        except ResourceNotFoundError:
+            raise HTTPException(status_code=404, detail="Expense not found")
