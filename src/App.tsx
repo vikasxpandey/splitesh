@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useState, useEffect } from 'react'
 import {
   AppBar,
   Avatar,
@@ -46,9 +46,10 @@ import {
   PersonAdd,
   ReceiptLong,
 } from '@mui/icons-material'
-import { usePersistentState } from './hooks/usePersistentState'
+// import { usePersistentState } from './hooks/usePersistentState' // REMOVED
 import type { Group, Member } from './types'
 import { calculateBalances, calculateSettlements, formatCurrency } from './utils/settlements'
+import { storage } from './utils/storage'
 
 const createId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -64,11 +65,50 @@ type ExpenseFormState = {
   splitBetween: Record<string, boolean>
 }
 
+// Simple Error Dialog Component
+/*
+import Dialog from '@mui/material/Dialog';
+// ... reused existing Dialog ...
+*/
+
 function App() {
-  const [groups, setGroups] = usePersistentState<Group[]>('splitwise:groups', [])
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
-    () => groups[0]?.id ?? null,
-  )
+  const [groups, setGroups] = useState<Group[]>([]) // Changed to normal useState
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+
+  // --- Data Loading ---
+  useEffect(() => {
+    storage.listGroups()
+      .then(fetchedGroups => {
+        setGroups(fetchedGroups)
+        if (fetchedGroups.length > 0 && !selectedGroupId) {
+          setSelectedGroupId(fetchedGroups[0].id)
+        }
+      })
+      .catch(console.error)
+  }, [])
+
+  // Refresh selected group data when selected
+  useEffect(() => {
+    if (!selectedGroupId) return;
+
+    const refreshGroup = async () => {
+      try {
+        const [groupDetails, expenses] = await Promise.all([
+          storage.getGroup(selectedGroupId),
+          storage.getExpenses(selectedGroupId)
+        ])
+        setGroups(prev => prev.map(g =>
+          g.id === selectedGroupId
+            ? { ...groupDetails, expenses }
+            : g
+        ))
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    refreshGroup()
+  }, [selectedGroupId])
+
 
   const [isGroupDialogOpen, setGroupDialogOpen] = useState(false)
   const [groupName, setGroupName] = useState('')
@@ -94,48 +134,53 @@ function App() {
 
   const balances = useMemo(() => {
     if (!selectedGroup) return new Map<string, number>()
-    return calculateBalances(selectedGroup.expenses, selectedGroup.members)
+    return calculateBalances(selectedGroup.expenses || [], selectedGroup.members || [])
   }, [selectedGroup])
 
   const settlements = useMemo(() => {
     if (!selectedGroup) return []
-    return calculateSettlements(selectedGroup.expenses, selectedGroup.members)
+    return calculateSettlements(selectedGroup.expenses || [], selectedGroup.members || [])
   }, [selectedGroup])
 
   const totalSpent = useMemo(() => {
-    if (!selectedGroup) return 0
+    if (!selectedGroup || !selectedGroup.expenses) return 0
     return selectedGroup.expenses.reduce((sum, expense) => sum + expense.amount, 0)
   }, [selectedGroup])
 
   const totalMembers = selectedGroup?.members.length ?? 0
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!groupName.trim()) {
       setGroupNameError('Please enter a group name')
       return
     }
 
-    const newGroup: Group = {
-      id: createId(),
-      name: groupName.trim(),
-      members: [],
-      expenses: [],
-    }
+    try {
+      const newGroup = await storage.createGroup(groupName.trim(), [])
+      setGroups((prev) => [...prev, { ...newGroup, expenses: [] }])
+      setSelectedGroupId(newGroup.id)
 
-    setGroups((prev) => [...prev, newGroup])
-    setSelectedGroupId(newGroup.id)
-    setGroupName('')
-    setGroupNameError('')
-    setGroupDialogOpen(false)
+      setGroupName('')
+      setGroupNameError('')
+      setGroupDialogOpen(false)
+    } catch (e) {
+      console.error(e)
+      setGroupNameError('Failed to create group')
+    }
   }
 
-  const handleDeleteGroup = (groupId: string) => {
-    setGroups((prev) => prev.filter((group) => group.id !== groupId))
-    if (selectedGroupId === groupId) {
-      setSelectedGroupId(() => {
-        const remainingGroups = groups.filter((group) => group.id !== groupId)
-        return remainingGroups[0]?.id ?? null
-      })
+  const handleDeleteGroup = async (groupId: string) => {
+    try {
+      await storage.deleteGroup(groupId)
+      setGroups((prev) => prev.filter((group) => group.id !== groupId))
+      if (selectedGroupId === groupId) {
+        setSelectedGroupId(() => {
+          const remainingGroups = groups.filter((group) => group.id !== groupId)
+          return remainingGroups[0]?.id ?? null
+        })
+      }
+    } catch (e) {
+      console.error(e)
     }
   }
 
@@ -145,7 +190,7 @@ function App() {
     setMemberDialogOpen(true)
   }
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (!selectedGroup) return
 
     const name = memberName.trim()
@@ -162,28 +207,32 @@ function App() {
       return
     }
 
-    const updatedGroup: Group = {
-      ...selectedGroup,
-      members: [...selectedGroup.members, { id: createId(), name }],
-    }
+    try {
+      const updatedGroup = await storage.addMember(selectedGroup.id, { id: createId(), name })
 
-    setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
-    setMemberDialogOpen(false)
-    setMemberName('')
+      setGroups((prev) => prev.map((group) =>
+        group.id === updatedGroup.id
+          ? { ...updatedGroup, expenses: selectedGroup.expenses }
+          : group
+      ))
+
+      setMemberDialogOpen(false)
+      setMemberName('')
+    } catch (e) {
+      console.error(e)
+      setMemberError('Failed to add member')
+    }
   }
 
-  const handleRemoveMember = (memberId: string) => {
+  const handleRemoveMember = async (memberId: string) => {
     if (!selectedGroup) return
 
-    const updatedGroup: Group = {
-      ...selectedGroup,
-      members: selectedGroup.members.filter((member) => member.id !== memberId),
-      expenses: selectedGroup.expenses.filter(
-        (expense) =>
-          expense.paidBy !== memberId && !expense.splitBetween.includes(memberId),
-      ),
+    try {
+      const updatedGroup = await storage.removeMember(selectedGroup.id, memberId)
+      setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
+    } catch (e) {
+      console.error(e)
     }
-    setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
   }
 
   const openExpenseDialog = () => {
@@ -222,7 +271,7 @@ function App() {
     }))
   }
 
-  const handleAddExpense = () => {
+  const handleAddExpense = async () => {
     if (!selectedGroup) return
 
     const amount = Number.parseFloat(expenseForm.amount)
@@ -248,32 +297,40 @@ function App() {
       return
     }
 
-    const updatedGroup: Group = {
-      ...selectedGroup,
-      expenses: [
-        {
-          id: createId(),
-          description: expenseForm.description.trim(),
-          amount,
-          paidBy: expenseForm.paidBy,
-          splitBetween: participants,
-          createdAt: new Date().toISOString(),
-        },
-        ...selectedGroup.expenses,
-      ],
-    }
+    try {
+      const newExpense = await storage.addExpense(selectedGroup.id, {
+        description: expenseForm.description.trim(),
+        amount,
+        paidBy: expenseForm.paidBy,
+        splitBetween: participants
+      })
 
-    setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
-    setExpenseDialogOpen(false)
+      const updatedGroup: Group = {
+        ...selectedGroup,
+        expenses: [newExpense, ...selectedGroup.expenses]
+      }
+
+      setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
+      setExpenseDialogOpen(false)
+    } catch (e) {
+      console.error(e)
+      setExpenseError('Failed to save expense')
+    }
   }
 
-  const handleDeleteExpense = (expenseId: string) => {
+  const handleDeleteExpense = async (expenseId: string) => {
     if (!selectedGroup) return
-    const updatedGroup: Group = {
-      ...selectedGroup,
-      expenses: selectedGroup.expenses.filter((expense) => expense.id !== expenseId),
+
+    try {
+      await storage.deleteExpense(selectedGroup.id, expenseId)
+      const updatedGroup: Group = {
+        ...selectedGroup,
+        expenses: selectedGroup.expenses.filter((expense) => expense.id !== expenseId),
+      }
+      setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
+    } catch (e) {
+      console.error(e)
     }
-    setGroups((prev) => prev.map((group) => (group.id === updatedGroup.id ? updatedGroup : group)))
   }
 
   return (
@@ -435,14 +492,14 @@ function App() {
                                 balance > 0.01
                                   ? 'success.main'
                                   : balance < -0.01
-                                  ? 'error.main'
-                                  : 'text.secondary'
+                                    ? 'error.main'
+                                    : 'text.secondary'
                               const label =
                                 balance > 0.01
                                   ? `Gets back ${formatCurrency(Math.abs(balance))}`
                                   : balance < -0.01
-                                  ? `Owes ${formatCurrency(Math.abs(balance))}`
-                                  : 'Settled up'
+                                    ? `Owes ${formatCurrency(Math.abs(balance))}`
+                                    : 'Settled up'
                               return (
                                 <ListItem
                                   key={member.id}
@@ -587,7 +644,7 @@ function App() {
                   </Typography>
                   <Typography color="text.secondary" paragraph>
                     Create a group, add members, and start logging expenses. Splitesh calculates who
-                    owes whom and keeps everything in sync on your device using local storage.
+                    owes whom and keeps everything in sync.
                   </Typography>
                   <Button
                     variant="contained"
