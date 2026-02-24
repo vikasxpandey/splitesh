@@ -38,18 +38,22 @@ import {
 
 import {
   Add,
-  AssignmentReturned,
+  ArrowForward,
+  DarkMode,
   DeleteOutline,
   Group as GroupIcon,
   GroupAdd,
+  LightMode,
   Payments,
   PersonAdd,
   ReceiptLong,
+  TrendingDown,
+  TrendingUp,
 } from '@mui/icons-material'
-// import { usePersistentState } from './hooks/usePersistentState' // REMOVED
 import type { Group, Member } from './types'
 import { calculateBalances, calculateSettlements, formatCurrency } from './utils/settlements'
 import { storage } from './utils/storage'
+import { useThemeMode } from './ThemeContext'
 
 const createId = () => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -65,14 +69,25 @@ type ExpenseFormState = {
   splitBetween: Record<string, boolean>
 }
 
-// Simple Error Dialog Component
-/*
-import Dialog from '@mui/material/Dialog';
-// ... reused existing Dialog ...
-*/
+// Gradient palette for avatars
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  'linear-gradient(135deg, #14b8a6, #06b6d4)',
+  'linear-gradient(135deg, #f43f5e, #ec4899)',
+  'linear-gradient(135deg, #f59e0b, #ef4444)',
+  'linear-gradient(135deg, #10b981, #14b8a6)',
+  'linear-gradient(135deg, #8b5cf6, #ec4899)',
+  'linear-gradient(135deg, #06b6d4, #3b82f6)',
+  'linear-gradient(135deg, #f97316, #f59e0b)',
+]
+
+function getAvatarGradient(index: number) {
+  return AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]
+}
 
 function App() {
-  const [groups, setGroups] = useState<Group[]>([]) // Changed to normal useState
+  const { mode, toggleMode } = useThemeMode()
+  const [groups, setGroups] = useState<Group[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
   // --- Data Loading ---
@@ -335,67 +350,159 @@ function App() {
 
   return (
     <>
-      <AppBar position="sticky" color="primary">
+      {/* ===== APP BAR ===== */}
+      <AppBar position="sticky" elevation={0}>
         <Toolbar>
-          <Payments sx={{ mr: 1 }} />
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Box
+            sx={{
+              mr: 1.5,
+              fontSize: '1.5rem',
+              animation: 'pulse-glow 3s ease-in-out infinite',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            💸
+          </Box>
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              background: mode === 'dark'
+                ? 'linear-gradient(135deg, #f1f5f9, #94a3b8)'
+                : 'linear-gradient(135deg, #1e293b, #475569)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
             Splitesh
           </Typography>
+          <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <IconButton
+              onClick={toggleMode}
+              sx={{
+                mr: 1,
+                color: mode === 'dark' ? '#fbbf24' : '#6366f1',
+                background: mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+                '&:hover': {
+                  background: mode === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(99, 102, 241, 0.15)',
+                },
+              }}
+            >
+              {mode === 'dark' ? <LightMode fontSize="small" /> : <DarkMode fontSize="small" />}
+            </IconButton>
+          </Tooltip>
           <Button
-            color="inherit"
+            variant="contained"
+            size="small"
             startIcon={<GroupAdd />}
             onClick={() => setGroupDialogOpen(true)}
           >
             New Group
           </Button>
         </Toolbar>
-      </AppBar>
+      </AppBar >
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Grid container spacing={3}>
+          {/* ===== GROUPS SIDEBAR ===== */}
           <Grid size={{ xs: 12, md: 4 }}>
-            <Card variant="outlined" sx={{ height: '100%' }}>
+            <Card
+              sx={{
+                height: '100%',
+                animation: 'fadeInUp 0.5s ease-out',
+              }}
+            >
               <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
-                  <Typography variant="h6">Groups</Typography>
+                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <GroupIcon sx={{ color: 'primary.main', fontSize: 20 }} />
+                    Groups
+                  </Typography>
                   <Tooltip title="Create group">
-                    <IconButton color="primary" onClick={() => setGroupDialogOpen(true)}>
-                      <Add />
+                    <IconButton
+                      onClick={() => setGroupDialogOpen(true)}
+                      sx={{
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        '&:hover': {
+                          background: 'rgba(99, 102, 241, 0.2)',
+                        },
+                      }}
+                    >
+                      <Add sx={{ color: 'primary.light', fontSize: 20 }} />
                     </IconButton>
                   </Tooltip>
                 </Stack>
                 {groups.length === 0 ? (
-                  <Typography color="text.secondary">
-                    Create your first group to start splitting expenses.
-                  </Typography>
+                  <Box sx={{
+                    textAlign: 'center',
+                    py: 6,
+                    px: 2,
+                  }}>
+                    <Typography sx={{ fontSize: '2.5rem', mb: 2 }}>👥</Typography>
+                    <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                      Create your first group to start splitting expenses.
+                    </Typography>
+                  </Box>
                 ) : (
                   <List sx={{ maxHeight: 480, overflowY: 'auto' }}>
-                    {groups.map((group) => (
+                    {groups.map((group, index) => (
                       <ListItem
                         key={group.id}
                         disablePadding
                         secondaryAction={
                           <Tooltip title="Delete group">
-                            <IconButton edge="end" onClick={() => handleDeleteGroup(group.id)}>
-                              <DeleteOutline />
+                            <IconButton
+                              edge="end"
+                              onClick={() => handleDeleteGroup(group.id)}
+                              sx={{
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' },
+                              }}
+                            >
+                              <DeleteOutline fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         }
-                        sx={{ mb: 1 }}
+                        sx={{
+                          mb: 0.5,
+                          animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`,
+                        }}
                       >
                         <ListItemButton
                           selected={group.id === selectedGroup?.id}
                           onClick={() => setSelectedGroupId(group.id)}
-                          sx={{ borderRadius: 1 }}
+                          sx={{ borderRadius: 2 }}
                         >
                           <ListItemAvatar>
-                            <Avatar>
-                              <GroupIcon />
+                            <Avatar
+                              sx={{
+                                background: getAvatarGradient(index),
+                                width: 40,
+                                height: 40,
+                                fontSize: '1rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {group.name[0]?.toUpperCase()}
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText
-                            primary={group.name}
-                            secondary={`${group.members.length} members • ${group.expenses.length} expenses`}
+                            primary={
+                              <Typography variant="body1" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                {group.name}
+                              </Typography>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary">
+                                {group.members.length} members · {group.expenses.length} expenses
+                              </Typography>
+                            }
                           />
                         </ListItemButton>
                       </ListItem>
@@ -406,10 +513,18 @@ function App() {
             </Card>
           </Grid>
 
+          {/* ===== MAIN CONTENT ===== */}
           <Grid size={{ xs: 12, md: 8 }}>
             {selectedGroup ? (
               <Stack spacing={3}>
-                <Card variant="outlined">
+                {/* Header card */}
+                <Card
+                  sx={{
+                    animation: 'fadeInUp 0.5s ease-out 0.1s both',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05))',
+                    border: '1px solid rgba(99, 102, 241, 0.12)',
+                  }}
+                >
                   <CardContent>
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
@@ -418,10 +533,20 @@ function App() {
                       alignItems={{ xs: 'flex-start', sm: 'center' }}
                     >
                       <Box>
-                        <Typography variant="h5" fontWeight={600}>
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            background: mode === 'dark'
+                              ? 'linear-gradient(135deg, #f1f5f9, #cbd5e1)'
+                              : 'linear-gradient(135deg, #1e293b, #334155)',
+                            backgroundClip: 'text',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                          }}
+                        >
                           {selectedGroup.name}
                         </Typography>
-                        <Typography color="text.secondary">
+                        <Typography color="text.secondary" sx={{ mt: 0.5 }}>
                           Split expenses among members, track balances, and settle up effortlessly.
                         </Typography>
                       </Box>
@@ -430,6 +555,7 @@ function App() {
                           variant="outlined"
                           startIcon={<PersonAdd />}
                           onClick={handleMemberDialogOpen}
+                          size="small"
                         >
                           Add member
                         </Button>
@@ -437,35 +563,44 @@ function App() {
                           variant="contained"
                           startIcon={<ReceiptLong />}
                           onClick={openExpenseDialog}
+                          size="small"
                         >
                           Add expense
                         </Button>
                       </Stack>
                     </Stack>
 
+                    {/* Summary tiles */}
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={3}>
                       <SummaryTile
                         label="Total spent"
                         value={formatCurrency(totalSpent)}
-                        icon={<Payments color="primary" />}
+                        icon={<Payments />}
+                        gradient="linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08))"
+                        iconColor="#818cf8"
                       />
                       <SummaryTile
                         label="Members"
                         value={totalMembers.toString()}
-                        icon={<GroupIcon color="primary" />}
+                        icon={<GroupIcon />}
+                        gradient="linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(6, 182, 212, 0.08))"
+                        iconColor="#2dd4bf"
                       />
                       <SummaryTile
                         label="Expenses"
                         value={selectedGroup.expenses.length.toString()}
-                        icon={<ReceiptLong color="primary" />}
+                        icon={<ReceiptLong />}
+                        gradient="linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(236, 72, 153, 0.08))"
+                        iconColor="#fb7185"
                       />
                     </Stack>
                   </CardContent>
                 </Card>
 
+                {/* Balances & Settlements */}
                 <Grid container spacing={3}>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Card variant="outlined" sx={{ height: '100%' }}>
+                    <Card sx={{ height: '100%', animation: 'fadeInUp 0.5s ease-out 0.2s both' }}>
                       <CardContent>
                         <Stack
                           direction="row"
@@ -475,51 +610,106 @@ function App() {
                         >
                           <Typography variant="h6">Member balances</Typography>
                           <Chip
-                            label={selectedGroup.members.length === 0 ? 'No members' : 'Up to date'}
+                            label={selectedGroup.members.length === 0 ? 'No members' : 'Live'}
                             size="small"
-                            color="default"
+                            sx={{
+                              background: selectedGroup.members.length === 0
+                                ? 'rgba(148, 163, 184, 0.1)'
+                                : 'rgba(16, 185, 129, 0.1)',
+                              color: selectedGroup.members.length === 0
+                                ? 'text.secondary'
+                                : '#10b981',
+                              fontWeight: 600,
+                              fontSize: '0.7rem',
+                            }}
                           />
                         </Stack>
                         {selectedGroup.members.length === 0 ? (
-                          <Typography color="text.secondary">
-                            Add members to track how everyone stands.
-                          </Typography>
+                          <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <Typography sx={{ fontSize: '2rem', mb: 1 }}>⚖️</Typography>
+                            <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                              Add members to track how everyone stands.
+                            </Typography>
+                          </Box>
                         ) : (
-                          <List>
-                            {selectedGroup.members.map((member) => {
+                          <List disablePadding>
+                            {selectedGroup.members.map((member, index) => {
                               const balance = balances.get(member.id) ?? 0
-                              const color =
-                                balance > 0.01
-                                  ? 'success.main'
-                                  : balance < -0.01
-                                    ? 'error.main'
-                                    : 'text.secondary'
-                              const label =
-                                balance > 0.01
-                                  ? `Gets back ${formatCurrency(Math.abs(balance))}`
-                                  : balance < -0.01
-                                    ? `Owes ${formatCurrency(Math.abs(balance))}`
-                                    : 'Settled up'
+                              const isPositive = balance > 0.01
+                              const isNegative = balance < -0.01
+                              const chipColor = isPositive ? '#10b981' : isNegative ? '#f43f5e' : '#64748b'
+                              const chipBg = isPositive
+                                ? 'rgba(16, 185, 129, 0.1)'
+                                : isNegative
+                                  ? 'rgba(244, 63, 94, 0.1)'
+                                  : 'rgba(100, 116, 139, 0.1)'
+                              const chipIcon = isPositive
+                                ? <TrendingUp sx={{ fontSize: 14, color: chipColor }} />
+                                : isNegative
+                                  ? <TrendingDown sx={{ fontSize: 14, color: chipColor }} />
+                                  : null
+                              const label = isPositive
+                                ? `+${formatCurrency(Math.abs(balance))}`
+                                : isNegative
+                                  ? `-${formatCurrency(Math.abs(balance))}`
+                                  : 'Settled'
                               return (
                                 <ListItem
                                   key={member.id}
                                   secondaryAction={
                                     <Tooltip title="Remove member">
-                                      <IconButton edge="end" onClick={() => handleRemoveMember(member.id)}>
-                                        <DeleteOutline />
+                                      <IconButton
+                                        edge="end"
+                                        onClick={() => handleRemoveMember(member.id)}
+                                        sx={{
+                                          color: 'text.secondary',
+                                          '&:hover': { color: 'error.main' },
+                                        }}
+                                      >
+                                        <DeleteOutline fontSize="small" />
                                       </IconButton>
                                     </Tooltip>
                                   }
+                                  sx={{
+                                    borderRadius: 2,
+                                    mb: 0.5,
+                                    '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
+                                  }}
                                 >
                                   <ListItemAvatar>
-                                    <Avatar>{member.name[0]?.toUpperCase()}</Avatar>
+                                    <Avatar
+                                      sx={{
+                                        background: getAvatarGradient(index),
+                                        width: 36,
+                                        height: 36,
+                                        fontSize: '0.85rem',
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {member.name[0]?.toUpperCase()}
+                                    </Avatar>
                                   </ListItemAvatar>
                                   <ListItemText
-                                    primary={member.name}
-                                    secondary={
-                                      <Typography component="span" color={color} fontWeight={500}>
-                                        {label}
+                                    primary={
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                        {member.name}
                                       </Typography>
+                                    }
+                                    secondary={
+                                      <Chip
+                                        icon={chipIcon ?? undefined}
+                                        label={label}
+                                        size="small"
+                                        sx={{
+                                          mt: 0.5,
+                                          background: chipBg,
+                                          color: chipColor,
+                                          fontWeight: 600,
+                                          fontSize: '0.7rem',
+                                          height: 24,
+                                          '& .MuiChip-icon': { ml: 0.5 },
+                                        }}
+                                      />
                                     }
                                   />
                                 </ListItem>
@@ -532,7 +722,7 @@ function App() {
                   </Grid>
 
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <Card variant="outlined" sx={{ height: '100%' }}>
+                    <Card sx={{ height: '100%', animation: 'fadeInUp 0.5s ease-out 0.25s both' }}>
                       <CardContent>
                         <Stack
                           direction="row"
@@ -540,25 +730,63 @@ function App() {
                           justifyContent="space-between"
                           mb={2}
                         >
-                          <Typography variant="h6">Suggested settlements</Typography>
-                          <AssignmentReturned color="primary" />
+                          <Typography variant="h6">Settlements</Typography>
+                          <Box sx={{
+                            p: 0.75,
+                            borderRadius: 1.5,
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            display: 'flex',
+                          }}>
+                            <ArrowForward sx={{ fontSize: 18, color: 'primary.light' }} />
+                          </Box>
                         </Stack>
                         {settlements.length === 0 ? (
-                          <Typography color="text.secondary">
-                            Everyone is settled up. Add more expenses to update balances.
-                          </Typography>
+                          <Box sx={{ textAlign: 'center', py: 4 }}>
+                            <Typography sx={{ fontSize: '2rem', mb: 1 }}>✅</Typography>
+                            <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                              Everyone is settled up!
+                            </Typography>
+                          </Box>
                         ) : (
-                          <List>
+                          <List disablePadding>
                             {settlements.map((settlement, index) => (
-                              <ListItem key={`${settlement.from}-${settlement.to}-${index}`}>
-                                <ListItemAvatar>
-                                  <Avatar>
-                                    <Payments />
-                                  </Avatar>
-                                </ListItemAvatar>
+                              <ListItem
+                                key={`${settlement.from}-${settlement.to}-${index}`}
+                                sx={{
+                                  borderRadius: 2,
+                                  mb: 0.5,
+                                  px: 1.5,
+                                  py: 1,
+                                  background: 'rgba(148, 163, 184, 0.03)',
+                                  '&:hover': { background: 'rgba(148, 163, 184, 0.06)' },
+                                }}
+                              >
                                 <ListItemText
-                                  primary={`${memberNameById(selectedGroup.members, settlement.from)} → ${memberNameById(selectedGroup.members, settlement.to)}`}
-                                  secondary={`Pay ${formatCurrency(settlement.amount)}`}
+                                  primary={
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                        {memberNameById(selectedGroup.members, settlement.from)}
+                                      </Typography>
+                                      <ArrowForward sx={{ fontSize: 14, color: 'primary.light' }} />
+                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                        {memberNameById(selectedGroup.members, settlement.to)}
+                                      </Typography>
+                                    </Stack>
+                                  }
+                                  secondary={
+                                    <Chip
+                                      label={formatCurrency(settlement.amount)}
+                                      size="small"
+                                      sx={{
+                                        mt: 0.5,
+                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
+                                        color: '#818cf8',
+                                        fontWeight: 700,
+                                        fontSize: '0.75rem',
+                                        height: 24,
+                                      }}
+                                    />
+                                  }
                                 />
                               </ListItem>
                             ))}
@@ -569,7 +797,8 @@ function App() {
                   </Grid>
                 </Grid>
 
-                <Card variant="outlined">
+                {/* Expenses list */}
+                <Card sx={{ animation: 'fadeInUp 0.5s ease-out 0.3s both' }}>
                   <CardContent>
                     <Stack
                       direction={{ xs: 'column', sm: 'row' }}
@@ -578,9 +807,13 @@ function App() {
                       justifyContent="space-between"
                       mb={2}
                     >
-                      <Typography variant="h6">Expenses</Typography>
+                      <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ReceiptLong sx={{ fontSize: 20, color: 'primary.main' }} />
+                        Expenses
+                      </Typography>
                       <Button
                         variant="contained"
+                        size="small"
                         startIcon={<Add />}
                         onClick={openExpenseDialog}
                         disabled={selectedGroup.members.length === 0}
@@ -589,46 +822,90 @@ function App() {
                       </Button>
                     </Stack>
                     {selectedGroup.expenses.length === 0 ? (
-                      <Typography color="text.secondary">
-                        No expenses yet. Add your first one to see how costs are split.
-                      </Typography>
+                      <Box sx={{ textAlign: 'center', py: 5 }}>
+                        <Typography sx={{ fontSize: '2.5rem', mb: 1 }}>🧾</Typography>
+                        <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                          No expenses yet. Add your first one to see how costs are split.
+                        </Typography>
+                      </Box>
                     ) : (
-                      <List>
-                        {selectedGroup.expenses.map((expense) => (
-                          <Box key={expense.id}>
+                      <List disablePadding>
+                        {selectedGroup.expenses.map((expense, index) => (
+                          <Box
+                            key={expense.id}
+                            sx={{
+                              animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both`,
+                            }}
+                          >
                             <ListItem
                               secondaryAction={
                                 <Tooltip title="Delete expense">
-                                  <IconButton edge="end" onClick={() => handleDeleteExpense(expense.id)}>
-                                    <DeleteOutline />
+                                  <IconButton
+                                    edge="end"
+                                    onClick={() => handleDeleteExpense(expense.id)}
+                                    sx={{
+                                      color: 'text.secondary',
+                                      '&:hover': { color: 'error.main' },
+                                    }}
+                                  >
+                                    <DeleteOutline fontSize="small" />
                                   </IconButton>
                                 </Tooltip>
                               }
+                              sx={{
+                                borderRadius: 2,
+                                mb: 0.5,
+                                '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
+                              }}
                             >
                               <ListItemAvatar>
-                                <Avatar>
-                                  <ReceiptLong />
+                                <Avatar
+                                  sx={{
+                                    background: getAvatarGradient(index),
+                                    width: 38,
+                                    height: 38,
+                                  }}
+                                >
+                                  <ReceiptLong sx={{ fontSize: 18 }} />
                                 </Avatar>
                               </ListItemAvatar>
                               <ListItemText
-                                primary={`${expense.description} · ${formatCurrency(expense.amount)}`}
-                                secondary={
-                                  <Stack direction="row" spacing={1} flexWrap="wrap">
-                                    <Typography component="span" color="text.secondary">
-                                      Paid by {memberNameById(selectedGroup.members, expense.paidBy)}
+                                primary={
+                                  <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary' }}>
+                                      {expense.description}
                                     </Typography>
-                                    <Divider orientation="vertical" flexItem />
-                                    <Typography component="span" color="text.secondary">
-                                      Split between{' '}
-                                      {expense.splitBetween
-                                        .map((id) => memberNameById(selectedGroup.members, id))
-                                        .join(', ')}
-                                    </Typography>
+                                    <Chip
+                                      label={formatCurrency(expense.amount)}
+                                      size="small"
+                                      sx={{
+                                        background: 'rgba(99, 102, 241, 0.1)',
+                                        color: '#818cf8',
+                                        fontWeight: 700,
+                                        fontSize: '0.7rem',
+                                        height: 22,
+                                      }}
+                                    />
                                   </Stack>
+                                }
+                                secondary={
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                    Paid by{' '}
+                                    <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>
+                                      {memberNameById(selectedGroup.members, expense.paidBy)}
+                                    </Box>
+                                    {' · '}
+                                    Split between{' '}
+                                    {expense.splitBetween
+                                      .map((id) => memberNameById(selectedGroup.members, id))
+                                      .join(', ')}
+                                  </Typography>
                                 }
                               />
                             </ListItem>
-                            <Divider component="li" />
+                            {index < selectedGroup.expenses.length - 1 && (
+                              <Divider sx={{ ml: 9, mr: 2, opacity: 0.5 }} />
+                            )}
                           </Box>
                         ))}
                       </List>
@@ -637,12 +914,31 @@ function App() {
                 </Card>
               </Stack>
             ) : (
-              <Card variant="outlined">
+              /* Empty state */
+              <Card
+                sx={{
+                  animation: 'fadeInUp 0.6s ease-out',
+                  textAlign: 'center',
+                  py: 4,
+                }}
+              >
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography sx={{ fontSize: '3.5rem', mb: 2 }}>💰</Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      mb: 1,
+                      background: mode === 'dark'
+                        ? 'linear-gradient(135deg, #f1f5f9, #94a3b8)'
+                        : 'linear-gradient(135deg, #1e293b, #475569)',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}
+                  >
                     Organize your shared expenses
                   </Typography>
-                  <Typography color="text.secondary" paragraph>
+                  <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}>
                     Create a group, add members, and start logging expenses. Splitesh calculates who
                     owes whom and keeps everything in sync.
                   </Typography>
@@ -650,6 +946,7 @@ function App() {
                     variant="contained"
                     startIcon={<GroupAdd />}
                     onClick={() => setGroupDialogOpen(true)}
+                    size="large"
                   >
                     Create your first group
                   </Button>
@@ -658,12 +955,19 @@ function App() {
             )}
           </Grid>
         </Grid>
-      </Container>
+      </Container >
 
-      <Dialog open={isGroupDialogOpen} onClose={() => setGroupDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Create a new group</DialogTitle>
+      {/* ===== DIALOGS ===== */}
+      < Dialog open={isGroupDialogOpen} onClose={() => setGroupDialogOpen(false)
+      } maxWidth="xs" fullWidth >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ fontSize: '1.25rem' }}>✨</Box>
+            <span>Create a new group</span>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ mb: 1 }}>
             Group expenses that belong together. You can add members and start tracking spending
             once the group is created.
           </DialogContentText>
@@ -681,18 +985,23 @@ function App() {
             helperText={groupNameError || ' '}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setGroupDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setGroupDialogOpen(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button variant="contained" onClick={handleCreateGroup}>
             Create group
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog >
 
       <Dialog open={isMemberDialogOpen} onClose={() => setMemberDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add a member</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ fontSize: '1.25rem' }}>👤</Box>
+            <span>Add a member</span>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ mb: 1 }}>
             Add someone who participates in this group. They will be available when splitting
             expenses.
           </DialogContentText>
@@ -710,8 +1019,8 @@ function App() {
             helperText={memberError || ' '}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setMemberDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setMemberDialogOpen(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button variant="contained" onClick={handleAddMember} disabled={!selectedGroup}>
             Add member
           </Button>
@@ -724,9 +1033,14 @@ function App() {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>New expense</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ fontSize: '1.25rem' }}>🧾</Box>
+            <span>New expense</span>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} mt={1}>
+          <Stack spacing={2.5} mt={1}>
             <TextField
               label="Description"
               fullWidth
@@ -748,6 +1062,7 @@ function App() {
                 label="Paid by"
                 value={expenseForm.paidBy}
                 onChange={(event) => handleExpenseChange('paidBy', event.target.value)}
+                sx={{ borderRadius: 3 }}
               >
                 {selectedGroup?.members.map((member) => (
                   <MenuItem key={member.id} value={member.id}>
@@ -757,7 +1072,7 @@ function App() {
               </Select>
             </FormControl>
             <Box>
-              <Typography fontWeight={600} gutterBottom>
+              <Typography fontWeight={600} gutterBottom sx={{ color: 'text.primary' }}>
                 Split between
               </Typography>
               <FormGroup>
@@ -768,23 +1083,35 @@ function App() {
                       <Checkbox
                         checked={Boolean(expenseForm.splitBetween[member.id])}
                         onChange={() => toggleSplitMember(member.id)}
+                        sx={{
+                          color: 'rgba(148, 163, 184, 0.3)',
+                          '&.Mui-checked': {
+                            color: '#6366f1',
+                          },
+                        }}
                       />
                     }
                     label={member.name}
+                    sx={{
+                      '& .MuiFormControlLabel-label': {
+                        fontSize: '0.875rem',
+                        color: 'text.primary',
+                      },
+                    }}
                   />
                 ))}
               </FormGroup>
               <FormHelperText>Select who shares this expense.</FormHelperText>
             </Box>
             {expenseError ? (
-              <Typography color="error" variant="body2">
+              <Typography color="error" variant="body2" sx={{ fontWeight: 500 }}>
                 {expenseError}
               </Typography>
             ) : null}
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExpenseDialogOpen(false)}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setExpenseDialogOpen(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
           <Button variant="contained" onClick={handleAddExpense}>
             Save expense
           </Button>
@@ -795,31 +1122,75 @@ function App() {
         open={Boolean(expenseError) && !isExpenseDialogOpen}
         onClose={() => setExpenseError(null)}
       >
-        <DialogTitle>Action required</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <Box sx={{ fontSize: '1.25rem' }}>⚠️</Box>
+            <span>Action required</span>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>{expenseError}</DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExpenseError(null)}>Okay</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button variant="contained" onClick={() => setExpenseError(null)}>Okay</Button>
         </DialogActions>
       </Dialog>
     </>
   )
 }
 
-function SummaryTile({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
+function SummaryTile({
+  label,
+  value,
+  icon,
+  gradient,
+  iconColor,
+}: {
+  label: string
+  value: string
+  icon: ReactNode
+  gradient: string
+  iconColor: string
+}) {
   return (
-    <Card variant="outlined" sx={{ flex: 1 }}>
-      <CardContent>
+    <Card
+      sx={{
+        flex: 1,
+        background: gradient,
+        border: '1px solid rgba(148, 163, 184, 0.06)',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+        },
+      }}
+    >
+      <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
         <Stack direction="row" alignItems="center" spacing={2}>
-          <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'primary.light', display: 'inline-flex' }}>
+          <Box
+            sx={{
+              p: 1,
+              borderRadius: 2,
+              background: 'rgba(255, 255, 255, 0.06)',
+              display: 'inline-flex',
+              color: iconColor,
+            }}
+          >
             {icon}
           </Box>
           <Box>
-            <Typography variant="subtitle2" color="text.secondary">
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: 'text.secondary',
+                mb: 0.25,
+              }}
+            >
               {label}
             </Typography>
-            <Typography variant="h6">{value}</Typography>
+            <Typography variant="h6" sx={{ color: 'text.primary', fontSize: '1.1rem' }}>
+              {value}
+            </Typography>
           </Box>
         </Stack>
       </CardContent>
