@@ -25,12 +25,12 @@ const sharedComponentBase = {
                 transition: 'all 0.2s ease',
             },
             contained: {
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
                 color: '#fff',
-                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
                 '&:hover': {
-                    background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
-                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.5)',
+                    background: 'linear-gradient(135deg, #3b82f6, #38bdf8)',
+                    boxShadow: '0 6px 20px rgba(37, 99, 235, 0.45)',
                     transform: 'translateY(-1px)',
                 },
             },
@@ -39,7 +39,7 @@ const sharedComponentBase = {
     MuiAvatar: {
         styleOverrides: {
             root: {
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
                 fontWeight: 600,
                 fontSize: '0.875rem',
             },
@@ -64,10 +64,10 @@ const sharedComponentBase = {
                 borderRadius: 12,
                 transition: 'all 0.2s ease',
                 '&.Mui-selected': {
-                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
-                    borderLeft: '3px solid #6366f1',
+                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(14, 165, 233, 0.1))',
+                    borderLeft: '3px solid #2563eb',
                     '&:hover': {
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.15))',
+                        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(14, 165, 233, 0.15))',
                     },
                 },
             },
@@ -85,9 +85,9 @@ export function createDarkTheme() {
     return createTheme({
         palette: {
             mode: 'dark',
-            primary: { main: '#6366f1', light: '#818cf8', dark: '#4f46e5' },
+            primary: { main: '#2563eb', light: '#60a5fa', dark: '#1d4ed8' },
             secondary: { main: '#14b8a6', light: '#2dd4bf', dark: '#0d9488' },
-            background: { default: '#0a0e1a', paper: '#111827' },
+            background: { default: '#0f1419', paper: '#1a2332' },
             error: { main: '#f43f5e' },
             success: { main: '#10b981' },
             warning: { main: '#f59e0b' },
@@ -109,13 +109,13 @@ export function createDarkTheme() {
             MuiCard: {
                 styleOverrides: {
                     root: {
-                        background: 'rgba(17, 24, 39, 0.6)',
+                        background: 'rgba(26, 35, 50, 0.6)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
                         border: '1px solid rgba(148, 163, 184, 0.08)',
                         boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
                         transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-                        '&:hover': { borderColor: 'rgba(99, 102, 241, 0.15)' },
+                        '&:hover': { borderColor: 'rgba(37, 99, 235, 0.15)' },
                     },
                 },
             },
@@ -123,11 +123,11 @@ export function createDarkTheme() {
                 styleOverrides: {
                     ...sharedComponentBase.MuiButton.styleOverrides,
                     outlined: {
-                        borderColor: 'rgba(99, 102, 241, 0.3)',
-                        color: '#818cf8',
+                        borderColor: 'rgba(37, 99, 235, 0.3)',
+                        color: '#60a5fa',
                         '&:hover': {
-                            borderColor: 'rgba(99, 102, 241, 0.6)',
-                            background: 'rgba(99, 102, 241, 0.08)',
+                            borderColor: 'rgba(37, 99, 235, 0.6)',
+                            background: 'rgba(37, 99, 235, 0.08)',
                         },
                     },
                 },
@@ -135,7 +135,7 @@ export function createDarkTheme() {
             MuiDialog: {
                 styleOverrides: {
                     paper: {
-                        background: 'rgba(17, 24, 39, 0.95)',
+                        background: 'rgba(26, 35, 50, 0.95)',
                         backdropFilter: 'blur(24px)',
                         WebkitBackdropFilter: 'blur(24px)',
                         border: '1px solid rgba(148, 163, 184, 0.1)',
@@ -149,10 +149,10 @@ export function createDarkTheme() {
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 12,
                             '& fieldset': { borderColor: 'rgba(148, 163, 184, 0.15)' },
-                            '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.4)' },
+                            '&:hover fieldset': { borderColor: 'rgba(37, 99, 235, 0.4)' },
                             '&.Mui-focused fieldset': {
-                                borderColor: '#6366f1',
-                                boxShadow: `0 0 0 3px ${alpha('#6366f1', 0.15)}`,
+                                borderColor: '#2563eb',
+                                boxShadow: `0 0 0 3px ${alpha('#2563eb', 0.15)}`,
                             },
                         },
                     },
@@ -161,7 +161,7 @@ export function createDarkTheme() {
             MuiAppBar: {
                 styleOverrides: {
                     root: {
-                        background: 'linear-gradient(135deg, rgba(17, 24, 39, 0.85), rgba(30, 27, 75, 0.85))',
+                        background: 'rgba(15, 20, 25, 0.9)',
                         backdropFilter: 'blur(20px)',
                         WebkitBackdropFilter: 'blur(20px)',
                         borderBottom: '1px solid rgba(148, 163, 184, 0.08)',
@@ -177,7 +177,7 @@ export function createDarkTheme() {
             MuiTooltip: {
                 styleOverrides: {
                     tooltip: {
-                        background: 'rgba(17, 24, 39, 0.95)',
+                        background: 'rgba(26, 35, 50, 0.95)',
                         backdropFilter: 'blur(8px)',
                         border: '1px solid rgba(148, 163, 184, 0.1)',
                         borderRadius: 8,
@@ -195,7 +195,7 @@ export function createLightTheme() {
     return createTheme({
         palette: {
             mode: 'light',
-            primary: { main: '#6366f1', light: '#818cf8', dark: '#4f46e5' },
+            primary: { main: '#2563eb', light: '#60a5fa', dark: '#1d4ed8' },
             secondary: { main: '#14b8a6', light: '#2dd4bf', dark: '#0d9488' },
             background: { default: '#f4f6fb', paper: '#ffffff' },
             error: { main: '#ef4444' },
@@ -226,8 +226,8 @@ export function createLightTheme() {
                         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.04)',
                         transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
                         '&:hover': {
-                            borderColor: 'rgba(99, 102, 241, 0.2)',
-                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(99, 102, 241, 0.08)',
+                            borderColor: 'rgba(37, 99, 235, 0.2)',
+                            boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(37, 99, 235, 0.08)',
                         },
                     },
                 },
@@ -236,11 +236,11 @@ export function createLightTheme() {
                 styleOverrides: {
                     ...sharedComponentBase.MuiButton.styleOverrides,
                     outlined: {
-                        borderColor: 'rgba(99, 102, 241, 0.3)',
-                        color: '#6366f1',
+                        borderColor: 'rgba(37, 99, 235, 0.3)',
+                        color: '#2563eb',
                         '&:hover': {
-                            borderColor: 'rgba(99, 102, 241, 0.6)',
-                            background: 'rgba(99, 102, 241, 0.05)',
+                            borderColor: 'rgba(37, 99, 235, 0.6)',
+                            background: 'rgba(37, 99, 235, 0.05)',
                         },
                     },
                 },
@@ -262,10 +262,10 @@ export function createLightTheme() {
                         '& .MuiOutlinedInput-root': {
                             borderRadius: 12,
                             '& fieldset': { borderColor: 'rgba(100, 116, 139, 0.2)' },
-                            '&:hover fieldset': { borderColor: 'rgba(99, 102, 241, 0.4)' },
+                            '&:hover fieldset': { borderColor: 'rgba(37, 99, 235, 0.4)' },
                             '&.Mui-focused fieldset': {
-                                borderColor: '#6366f1',
-                                boxShadow: `0 0 0 3px ${alpha('#6366f1', 0.1)}`,
+                                borderColor: '#2563eb',
+                                boxShadow: `0 0 0 3px ${alpha('#2563eb', 0.1)}`,
                             },
                         },
                     },

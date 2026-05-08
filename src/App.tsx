@@ -74,12 +74,12 @@ type ExpenseFormState = {
 
 // Gradient palette for avatars
 const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #6366f1, #8b5cf6)',
+  'linear-gradient(135deg, #2563eb, #0ea5e9)',
   'linear-gradient(135deg, #14b8a6, #06b6d4)',
   'linear-gradient(135deg, #f43f5e, #ec4899)',
   'linear-gradient(135deg, #f59e0b, #ef4444)',
   'linear-gradient(135deg, #10b981, #14b8a6)',
-  'linear-gradient(135deg, #8b5cf6, #ec4899)',
+  'linear-gradient(135deg, #0ea5e9, #06b6d4)',
   'linear-gradient(135deg, #06b6d4, #3b82f6)',
   'linear-gradient(135deg, #f97316, #f59e0b)',
 ]
@@ -470,10 +470,10 @@ function App() {
               size="small"
               sx={{
                 mr: { xs: 0.5, sm: 1 },
-                color: mode === 'dark' ? '#fbbf24' : '#6366f1',
-                background: mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+                color: mode === 'dark' ? '#fbbf24' : '#2563eb',
+                background: mode === 'dark' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(37, 99, 235, 0.1)',
                 '&:hover': {
-                  background: mode === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(99, 102, 241, 0.15)',
+                  background: mode === 'dark' ? 'rgba(251, 191, 36, 0.2)' : 'rgba(37, 99, 235, 0.15)',
                 },
               }}
             >
@@ -486,10 +486,10 @@ function App() {
               onClick={() => setGroupDialogOpen(true)}
               sx={{
                 display: { xs: 'inline-flex', sm: 'none' },
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #2563eb, #0ea5e9)',
                 color: '#fff',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
+                  background: 'linear-gradient(135deg, #3b82f6, #38bdf8)',
                 },
               }}
               size="small"
@@ -818,8 +818,8 @@ function App() {
                         label="Total spent"
                         value={formatCurrency(totalSpent)}
                         icon={<Payments />}
-                        gradient="linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.08))"
-                        iconColor="#818cf8"
+                        gradient="linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(14, 165, 233, 0.08))"
+                        iconColor="#60a5fa"
                       />
                       <SummaryTile
                         label="Members"
@@ -1064,8 +1064,8 @@ function App() {
                                       size="small"
                                       sx={{
                                         mt: 0.5,
-                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
-                                        color: '#818cf8',
+                                        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(14, 165, 233, 0.1))',
+                                        color: '#60a5fa',
                                         fontWeight: 700,
                                         fontSize: '0.75rem',
                                         height: 24,
@@ -1175,8 +1175,8 @@ function App() {
                                       label={formatCurrency(expense.amount)}
                                       size="small"
                                       sx={{
-                                        background: 'rgba(99, 102, 241, 0.1)',
-                                        color: '#818cf8',
+                                        background: 'rgba(37, 99, 235, 0.1)',
+                                        color: '#60a5fa',
                                         fontWeight: 700,
                                         fontSize: '0.7rem',
                                         height: 22,
@@ -1186,7 +1186,7 @@ function App() {
                                   </Stack>
                                 }
                                 secondary={
-                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' }, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
                                     Paid by{' '}
                                     <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>
                                       {memberNameById(selectedGroup.members, expense.paidBy)}
@@ -1384,7 +1384,7 @@ function App() {
                         sx={{
                           color: 'rgba(148, 163, 184, 0.3)',
                           '&.Mui-checked': {
-                            color: '#6366f1',
+                            color: '#2563eb',
                           },
                         }}
                       />
@@ -1455,7 +1455,7 @@ function SummaryTile({
       sx={{
         flex: 1,
         flexShrink: 0,
-        minWidth: { xs: 130, sm: 'auto' },
+        minWidth: { xs: 180, sm: 'auto' },
         background: gradient,
         border: '1px solid rgba(148, 163, 184, 0.06)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
