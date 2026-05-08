@@ -930,6 +930,7 @@ function App() {
                                     borderRadius: 2,
                                     mb: 0.5,
                                     px: { xs: 1, sm: 2 },
+                                    '& .MuiListItemSecondaryAction-root': { right: { xs: 4, sm: 16 } },
                                     '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
                                   }}
                                 >
@@ -947,6 +948,7 @@ function App() {
                                     </Avatar>
                                   </ListItemAvatar>
                                   <ListItemText
+                                    sx={{ minWidth: 0 }}
                                     primary={
                                       editingMemberId === member.id ? (
                                         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -970,7 +972,7 @@ function App() {
                                           </IconButton>
                                         </Stack>
                                       ) : (
-                                        <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                                        <Typography variant="body2" fontWeight={600} noWrap sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                                           {member.name}
                                         </Typography>
                                       )
@@ -1044,13 +1046,14 @@ function App() {
                                 }}
                               >
                                 <ListItemText
+                                  sx={{ minWidth: 0 }}
                                   primary={
                                     <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                                      <Typography variant="body2" fontWeight={600} noWrap sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' }, minWidth: 0 }}>
                                         {memberNameById(selectedGroup.members, settlement.from)}
                                       </Typography>
-                                      <ArrowForward sx={{ fontSize: 14, color: 'primary.light' }} />
-                                      <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                                      <ArrowForward sx={{ fontSize: 14, color: 'primary.light', flexShrink: 0 }} />
+                                      <Typography variant="body2" fontWeight={600} noWrap sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' }, minWidth: 0 }}>
                                         {memberNameById(selectedGroup.members, settlement.to)}
                                       </Typography>
                                     </Stack>
@@ -1146,6 +1149,7 @@ function App() {
                                 borderRadius: 2,
                                 mb: 0.5,
                                 px: { xs: 0.5, sm: 2 },
+                                '& .MuiListItemSecondaryAction-root': { right: { xs: 4, sm: 16 } },
                                 '&:hover': { background: 'rgba(148, 163, 184, 0.04)' },
                               }}
                             >
@@ -1161,9 +1165,10 @@ function App() {
                                 </Avatar>
                               </ListItemAvatar>
                               <ListItemText
+                                sx={{ minWidth: 0 }}
                                 primary={
-                                  <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                                    <Typography variant="body2" fontWeight={600} sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                                  <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap', minWidth: 0 }}>
+                                    <Typography variant="body2" fontWeight={600} noWrap sx={{ color: 'text.primary', fontSize: { xs: '0.8rem', sm: '0.875rem' }, minWidth: 0 }}>
                                       {expense.description}
                                     </Typography>
                                     <Chip
@@ -1175,12 +1180,13 @@ function App() {
                                         fontWeight: 700,
                                         fontSize: '0.7rem',
                                         height: 22,
+                                        flexShrink: 0,
                                       }}
                                     />
                                   </Stack>
                                 }
                                 secondary={
-                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' }, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     Paid by{' '}
                                     <Box component="span" sx={{ color: 'primary.light', fontWeight: 600 }}>
                                       {memberNameById(selectedGroup.members, expense.paidBy)}
@@ -1449,7 +1455,7 @@ function SummaryTile({
       sx={{
         flex: 1,
         flexShrink: 0,
-        minWidth: { xs: 150, sm: 'auto' },
+        minWidth: { xs: 130, sm: 'auto' },
         background: gradient,
         border: '1px solid rgba(148, 163, 184, 0.06)',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -1460,21 +1466,23 @@ function SummaryTile({
       }}
     >
       <CardContent sx={{ py: 2, '&:last-child': { pb: 2 } }}>
-        <Stack direction="row" alignItems="center" spacing={2}>
+        <Stack direction="row" alignItems="center" spacing={2} sx={{ minWidth: 0 }}>
           <Box
             sx={{
               p: 1,
               borderRadius: 2,
               background: 'rgba(255, 255, 255, 0.06)',
               display: 'inline-flex',
+              flexShrink: 0,
               color: iconColor,
             }}
           >
             {icon}
           </Box>
-          <Box>
+          <Box sx={{ minWidth: 0 }}>
             <Typography
               variant="subtitle2"
+              noWrap
               sx={{
                 color: 'text.secondary',
                 mb: 0.25,
@@ -1482,7 +1490,7 @@ function SummaryTile({
             >
               {label}
             </Typography>
-            <Typography variant="h6" sx={{ color: 'text.primary', fontSize: '1.1rem' }}>
+            <Typography variant="h6" noWrap sx={{ color: 'text.primary', fontSize: '1.1rem' }}>
               {value}
             </Typography>
           </Box>
