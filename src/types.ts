@@ -30,3 +30,10 @@ export type Settlement = {
   amount: number
 }
 
+export type ExpenseFormState = {
+  description: string
+  amount: string
+  paidBy: string
+  splitBetween: Record<string, boolean>
+}
+
